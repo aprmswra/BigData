@@ -1,6 +1,6 @@
 Automated Streaming Cryptocurrency Data Analysis
 
-![Uploading BigDataArchitecture.drawio.png…]()
+![BigDataArchitecture drawio](https://github.com/user-attachments/assets/09cff28a-01bb-4e19-a737-43355f1db30d)
 
 ## Components
 
@@ -59,4 +59,4 @@ Automated Streaming Cryptocurrency Data Analysis
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/yourrepository.git
+   git clone https://github.com/aprmswra/BigData.git
