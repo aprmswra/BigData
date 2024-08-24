@@ -1,0 +1,7 @@
+Date: 2024-04-27, Model: ./ver_0.3/backend/MLTraining/training/finhub/model_lstm_2024-04-27.h5, Scaler: ./ver_0.3/backend/MLTraining/training/finhub/scaler_2024-04-27.pkl, Train Samples: 19858, RMSE: 79.66
+Date: 2024-04-27, Model: ./ver_0.3/backend/MLTraining/training/finhub/model_lstm_2024-04-27.h5, Scaler: ./ver_0.3/backend/MLTraining/training/finhub/scaler_2024-04-27.pkl, RMSE: 66.7
+Date: 2024-04-27, Model: ./ver_0.3/backend/MLTraining/training/finhub/model_lstm_realtime_streaming_retraining_newest_2024-04-27.h5, Scaler: ./ver_0.3/backend/MLTraining/training/finhub/scaler.pkl, RMSE: 83.74
+Date: 2024-05-17, Model: /home/bigdata/project-folder/ver_0.3/backend/MLTraining/training/finhub/model_lstm_2024-05-17.h5, Scaler: /home/bigdata/project-folder/ver_0.3/backend/MLTraining/training/finhub/scaler.pkl, RMSE: 3315.88
+Date: 2024-05-17, Model: /home/bigdata/project-folder/ver_0.3/backend/MLTraining/training/finhub/model_lstm_2024-05-17.h5, Scaler: /home/bigdata/project-folder/ver_0.3/backend/MLTraining/training/finhub/scaler.pkl, RMSE: 1903.31
+Date: 2024-05-19, Model: ./ver_0.3/backend/MLTraining/training/finhub/model_lstm_2024-05-19.h5, Scaler: ./ver_0.3/backend/MLTraining/training/finhub/scaler.pkl, RMSE: 2206.55
+Date: 2024-05-19, Model: ./ver_0.3/backend/MLTraining/training/finhub/model_lstm_realtime_streaming_retraining_newest_2024-05-19.h5, Scaler: ./ver_0.3/backend/MLTraining/training/finhub/scaler.pkl, RMSE: 3134.41

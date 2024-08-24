@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="css/bootstrap.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css"
+    />
+    <link rel="stylesheet" href="css/dataTables.bootstrap5.min.css" />
+    <link rel="stylesheet" href="css/style.css" />
+    <title>Bitcoin Dashboard</title>
+    <style>
+        .arrow-icons i {
+            display: none;
+        }
+    </style>
+  </head>
+  <body>
+    <!-- top navigation bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+      <div class="container-fluid">
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#sidebar"
+          aria-controls="offcanvasExample"
+        >
+          <span class="navbar-toggler-icon" data-bs-target="#sidebar"></span>
+        </button>
+        <a
+          class="navbar-brand sme-auto ms-lg-0 ms-3 text-uppercase fw-bold"
+          href="#"
+          >Bitcoin Market Dashboard</a
+        >
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#topNavBar"
+          aria-controls="topNavBar"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="topNavBar">
+          <form class="d-flex ms-auto my-3 my-lg-0">
+            <div class="input-group">
+              <span class="input-group-text">Start Date</span>
+              <input class="form-control" type="date" aria-label="Start Date" id="start-date"/>
+              <span class="input-group-text">End Date</span>
+              <input class="form-control" type="date" aria-label="End Date" id="end-date"/>
+              <button class="btn btn-primary" type="button" onclick="fetchData()">
+                Get Data
+              </button>
+              <button class="btn btn-secondary" type="button" onclick="startAutoRefresh()">
+                Start Auto Refresh
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </nav>
+    <!-- top navigation bar -->
+    <!-- offcanvas -->
+    <div
+      class="offcanvas offcanvas-start sidebar-nav bg-dark"
+      tabindex="-1"
+      id="sidebar"
+    >
+      <div class="offcanvas-body p-0">
+        <nav class="navbar-dark">
+          <ul class="navbar-nav">
+          </ul>
+        </nav>
+      </div>
+    </div>
+    <!-- offcanvas -->
+    <main class="mt-5 pt-3">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-md-12">
+            <h4> </h4>
+          </div>
+          <div id="results" class="alert alert-danger" role="alert" style="display: none;"></div>
+        </div>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <div class="card bg-secondary text-white h-100">
+              <div class="card-body py-5" id="total-news-card">TOTAL NEWS <h2>0</h2></div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card bg-success text-white h-100">
+              <div class="card-body py-5"id="sum_volume">TOTAL VOLUME<h2>0</h2></div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card bg-dark text-white h-100">
+              <div class="card-body py-5">SYMBOL <h2>BTCUSDT</h2></div>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <div class="card h-100">
+              <div class="card-header">
+                <span class="me-2"><i class="bi bi-bar-chart-fill"></i></span>
+                Bitcoin Price
+              </div>
+              <div class="card-body">
+                <canvas id="prediction-chart" width="400" height="200"></canvas>
+              </div>
+            </div>
+          </div>
+        <div class="row">
+          <div class="col-md-12 mb-3">
+            <div class="card">
+              <div class="card-header">
+                <span><i class="bi bi-table me-2"></i></span> Data News
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table
+                    id="example"
+                    class="table table-striped data-table"
+                    style="width: 100%"
+                  >
+                    <thead>
+                      <tr>
+                        <th>Title</th>
+                        <th>Datetime</th>
+                        <th>Sentiment</th>
+                        <th>Source</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody id="news-table-body">                
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <th>Title</th>
+                        <th>Datetime</th>
+                        <th>Sentiment</th>
+                        <th>Source</th>
+                        <th>Description</th>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+
+    <script>
+
+    async function fetchData() {
+      const startDate = document.getElementById('start-date').value;
+      const endDate = document.getElementById('end-date').value;
+
+      const apiUrl = `http://localhost:5000/api/news?start_date=${startDate}&end_date=${endDate}`;
+      
+      try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error('Failed to fetch');
+        
+        const data = await response.json();
+        displayResults(data, data.latest_financial_real);
+
+        displayFinancialData(data.latest_financial_real, data.latest_financial_prediction, data);
+      } catch (error) {
+        console.error('Error fetching news data:', error);
+        const errorMessage = 'Failed to fetch data. Make sure the API is running.';
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.classList.add('alert', 'alert-danger');
+        alertDiv.setAttribute('role', 'alert');
+        alertDiv.innerText = errorMessage;
+        
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '';
+        resultsDiv.appendChild(alertDiv);
+      }
+    }
+
+    let autoRefreshTimer = null;
+    function startAutoRefresh() {
+      // Get the current interval setting (in minutes)
+      let interval = prompt("Please enter the refresh interval in minutes:", "5");
+      interval = Number(interval) * 60000;  // Convert minutes to milliseconds
+
+    
+      if (interval === 0) {
+          stopAutoRefresh();  // Call stopAutoRefresh if interval is 0
+          alert("Auto refresh stopped.");
+          return;
+      }
+
+      if (isNaN(interval) || interval <= 0) {
+        alert("Invalid interval. Please enter a positive number.");
+        return;
+      }
+
+      // Check if dates and times are selected
+      const startDate = document.getElementById('start-date').value;
+      const endDate = document.getElementById('end-date').value;
+
+      if (!startDate  || !endDate) {
+        alert("Please select both start and end dates before starting auto refresh.");
+        return;
+      }
+
+      // Clear any existing auto refresh timer
+      if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+      }
+
+      // Setup a new auto refresh timer
+      autoRefreshTimer = setInterval(fetchData, interval);
+      alert("Auto refresh started every " + interval/60000 + " minutes.");
+    }
+
+    function stopAutoRefresh() {
+      if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+      }
+    }
+            
+    function displayResults(data, financialDataList) {
+      const totalNewsCard = document.getElementById('total-news-card');
+      totalNewsCard.querySelector('h2').innerText = data.total_news;
+      const sentimentDictionary = {};
+      data.sentiments.forEach(sentiment => {
+          sentimentDictionary[sentiment.key] = sentiment.doc_count;
+      });
+      
+      // Create separate lists for positive, negative, and neutral sentiments
+      const positiveSentiments = [];
+      const negativeSentiments = [];
+      const neutralSentiments = [];
+
+
+      data.news.forEach(newsItem => {
+          const date = newsItem.date_time.split('T')[0]; 
+
+          if (newsItem.sentiment === 'Positive') {
+              positiveSentiments.push({
+                  date: date,
+                  sentiment: newsItem.sentiment
+              });
+          } else if (newsItem.sentiment === 'Negative') {
+              negativeSentiments.push({
+                  date: date,
+                  sentiment: newsItem.sentiment
+              });
+          } else {
+              neutralSentiments.push({
+                  date: date,
+                  sentiment: newsItem.sentiment
+              });
+          }
+      });
+
+    // Function to aggregate sentiment counts by date
+    const aggregateSentiments = (sentimentList) => {
+        const sentimentCounts = {};
+
+        sentimentList.forEach(item => {
+            const date = item.date;
+            if (!sentimentCounts[date]) {
+                sentimentCounts[date] = 0;
+            }
+            sentimentCounts[date]++;
+        });
+
+        return sentimentCounts;
+    };
+
+        const positiveSentimentCounts = aggregateSentiments(positiveSentiments);
+        const negativeSentimentCounts = aggregateSentiments(negativeSentiments);
+        const neutralSentimentCounts = aggregateSentiments(neutralSentiments);
+
+        // Function to get a list of unique dates from all sentiment data
+        const getUniqueDates = () => {
+            const dates = new Set();
+            data.news.forEach(newsItem => {
+                const date = newsItem.date_time.split('T')[0];
+                dates.add(date);
+            });
+            return Array.from(dates);
+        };
+
+        const uniqueDates = getUniqueDates();
+
+        // Ensure all dates have counts, set to 0 if missing
+        uniqueDates.forEach(date => {
+            if (!positiveSentimentCounts[date]) positiveSentimentCounts[date] = 0;
+            if (!negativeSentimentCounts[date]) negativeSentimentCounts[date] = 0;
+            if (!neutralSentimentCounts[date]) neutralSentimentCounts[date] = 0;
+        });
+
+        const newsTableBody = document.getElementById('news-table-body');
+        newsTableBody.innerHTML = '';
+        data.news.forEach(newsItem => {
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>${newsItem.title}</td>
+                <td>${newsItem.date_time}</td>
+                <td>${newsItem.sentiment}</td>
+                <td>${newsItem.source}</td>
+                <td>${newsItem.description}</td>
+            `;
+            newsTableBody.appendChild(newRow);
+        });    
+
+      }
+    
+    let lastPriceCard = null;
+
+    function displayFinancialData(financialDataList,financialDataList_predicted, data) {
+        if (financialDataList && financialDataList.length > 0) {
+            const lastPrediction = financialDataList_predicted[financialDataList_predicted.length - 1].prediction;
+            const lastActualPrice = financialDataList[financialDataList.length - 1].price;
+
+            // Initialize arrays to store data for each dataset
+            const dates = [];
+            const prices = [];
+            const predictions = [];
+            const predictionDates = [];
+            const total_volume = [];
+
+            // Iterate through each financial data entry
+            financialDataList.forEach(data => {
+                const formattedDate = data.timestamp.slice(0, 10);
+                dates.push(formattedDate);
+                prices.push(data.price);
+                total_volume.push(data.total_volume);
+            });
+
+            financialDataList_predicted.forEach(data => {
+                // console.log("data:", data);
+                const formattedPredictionDate = data.prediction_time.slice(0, 10);
+                predictions.push(data.predicted_price);
+                predictionDates.push(formattedPredictionDate);
+            });
+
+        const sentimentDictionary = {};
+        data.sentiments.forEach(sentiment => {
+            sentimentDictionary[sentiment.key] = sentiment.doc_count;
+        });
+      
+        // Create separate lists for positive, negative, and neutral sentiments
+        const positiveSentiments = [];
+        const negativeSentiments = [];
+        const neutralSentiments = [];
+
+        data.news.forEach(newsItem => {
+            const date = newsItem.date_time.split('T')[0];
+            // console.log('date', date.length) // Extract date part only
+
+            if (newsItem.sentiment === 'Positive') {
+                positiveSentiments.push({
+                    date: date,
+                    sentiment: newsItem.sentiment
+                });
+            } else if (newsItem.sentiment === 'Negative') {
+                negativeSentiments.push({
+                    date: date,
+                    sentiment: newsItem.sentiment
+                });
+            } else {
+                neutralSentiments.push({
+                    date: date,
+                    sentiment: newsItem.sentiment
+                });
+            }
+        });
+
+        // Function to aggregate sentiment counts by date
+        const aggregateSentiments = (sentimentList) => {
+            const sentimentCounts = {};
+
+            sentimentList.forEach(item => {
+                const date = item.date;
+
+                // Initialize the date object if it doesn't exist
+                if (!sentimentCounts[date]) {
+                    sentimentCounts[date] = 0;
+                }
+
+                // Increment the sentiment count
+                sentimentCounts[date]++;
+            });
+
+            return sentimentCounts;
+        };
+
+            const positiveSentimentCounts = aggregateSentiments(positiveSentiments);
+            const negativeSentimentCounts = aggregateSentiments(negativeSentiments);
+            const neutralSentimentCounts = aggregateSentiments(neutralSentiments);
+
+            // Function to get a list of unique dates from all sentiment data
+            const getUniqueDates = () => {
+                const dates = new Set();
+                data.news.forEach(newsItem => {
+                    const date = newsItem.date_time.split('T')[0];
+                    dates.add(date);
+                });
+                return Array.from(dates);
+            };
+
+            const uniqueDates = getUniqueDates();
+
+            // Ensure all dates have counts, set to 0 if missing
+            uniqueDates.forEach(date => {
+                if (!positiveSentimentCounts[date]) positiveSentimentCounts[date] = 0;
+                if (!negativeSentimentCounts[date]) negativeSentimentCounts[date] = 0;
+                if (!neutralSentimentCounts[date]) neutralSentimentCounts[date] = 0;
+            });
+
+
+            // Update chart with new data
+            updateChart(dates, prices, predictionDates, predictions, positiveSentimentCounts, negativeSentimentCounts, neutralSentimentCounts);
+
+            // Update card with total volume
+            const sumVolume = document.getElementById('sum_volume');
+            const roundedTotalVolume = parseFloat(total_volume[0].toFixed(4));
+            // console.log("Total Volume:", roundedTotalVolume);
+
+            sumVolume.querySelector('h2').innerText = `${roundedTotalVolume} BTC`;;
+        } else {
+          console.log('No financial data available for the given range.');
+          document.getElementById('sum_volume').querySelector('h2').innerText = '0 BTC';
+
+          // Destroy the charts if they exist
+          if (predictionChart) {
+              predictionChart.destroy();
+              predictionChart = null; // Ensure to clear the reference
+          }
+
+          document.getElementById('news-table-body').innerHTML = '';
+        }
+    }
+
+
+
+let predictionChart = null;
+
+    function updateChart(dates, prices, predictionDates, predictions, positiveSentimentCounts, negativeSentimentCounts, neutralSentimentCounts) {
+        const line = document.getElementById('prediction-chart');
+
+        if (predictionChart) predictionChart.destroy();
+
+        // Menggabungkan dates dengan predictionDates
+        const combinedDates = [...new Set(dates.concat(predictionDates))];
+        // Membuat array kosong untuk menampung data aktual dan prediksi
+        let actualPrices = [];
+        
+
+        // Menambahkan tanggal yang tidak ada dalam positiveSentimentCounts, negativeSentimentCounts, dan neutralSentimentCounts dengan nilai 0
+        combinedDates.forEach(date => {
+            if (!positiveSentimentCounts.hasOwnProperty(date)) {
+                positiveSentimentCounts[date] = 0;
+            }
+            if (!negativeSentimentCounts.hasOwnProperty(date)) {
+                negativeSentimentCounts[date] = 0;
+            }
+            if (!neutralSentimentCounts.hasOwnProperty(date)) {
+                neutralSentimentCounts[date] = 0;
+            }
+        });
+
+        // console.log('combineDates', combinedDates)
+        const sortedDatesPositives = Object.keys(positiveSentimentCounts).sort();
+        const sortedDatesNegatives = Object.keys(negativeSentimentCounts).sort();
+        const sortedDatesNeutrals = Object.keys(neutralSentimentCounts).sort();
+
+        // Extract the values into separate lists
+        const positiveSentimentValues = sortedDatesPositives.map(date => positiveSentimentCounts[date]);
+        const negativeSentimentValues = sortedDatesNegatives.map(date => negativeSentimentCounts[date]);
+        const neutralSentimentValues = sortedDatesNeutrals.map(date => neutralSentimentCounts[date]);
+
+        const negativeValuesConverted = negativeSentimentValues.map(value => -value);
+
+
+        // Fungsi untuk menghitung probabilitas tertinggi antara sentimen positif dan negatif
+        function calculateHighestProbabilities(positif, negatif, netral) {
+            let probabilities = [];
+            for (let i = 0; i < positif.length; i++) {
+                let totalSentiment = positif[i] + negatif[i] + netral[i];
+                let probPositif = positif[i] / totalSentiment;
+                let probNegatif = negatif[i] / totalSentiment;
+
+                // Membandingkan hanya probabilitas positif dan negatif
+                if (probNegatif > probPositif) {
+                    probabilities.push(-probNegatif);  // Menggunakan nilai negatif untuk probNegatif yang lebih tinggi
+                } else {
+                    probabilities.push(probPositif);
+                }
+            }
+            probabilities = probabilities.map(value => isNaN(value) ? 0 : value);
+            return probabilities;
+        }
+
+        // Hitung probabilitas tertinggi
+        const highestProbabilities = calculateHighestProbabilities(positiveSentimentValues, negativeSentimentValues, neutralSentimentValues);
+
+        combinedDates.forEach(date => {
+            if (dates.includes(date)) {
+                actualPrices.push(prices[dates.indexOf(date)]);
+            } else {
+                actualPrices.push(null);
+            }
+        });
+        // Mengisi array predictionPrices dengan data dari predictions, dan mengisi nilai null pada posisi yang tidak sesuai
+        combinedDates.forEach(date => {
+            if (predictionDates.includes(date)) {
+                predictionPrices.push(predictions[predictionDates.indexOf(date)]);
+            } else {
+                predictionPrices.push(null);
+            }
+        });
+
+        if (predictionChart) {
+            predictionChart.destroy();
+        }
+
+        predictionChart = new Chart(line, {
+        type: 'line',
+        data: {
+            labels: combinedDates,
+            datasets: [{
+                    label: 'Actual Price',
+                    data: actualPrices,
+                    fill: false,
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgb(75, 192, 192, 0.5)',
+                    tension: 0.1,
+                    yAxisID:'y'
+                },
+                {
+                    label: 'Prediction',
+                    data: predictionPrices,
+                    fill: false,
+                    borderColor: 'rgb(237, 127, 17)',
+                    tension: 0.1,
+                    yAxisID:'y'
+                },
+                {
+                    label: 'Sentiment Ratio',
+                    data: highestProbabilities,
+                    fill: true,
+                    
+                    backgroundColor: 'rgb(0, 255, 0, 0.5)',
+                    tension: 0.1,
+                    yAxisID:'y1',
+
+                    fill: {
+                        target: 'origin',
+                        above: 'rgba(99, 255, 71, 0.5)', // Hijau
+                        below: 'rgba(255, 99, 71, 0.5)'  // Merah
+                    },
+                    tension: 0.1
+                    },
+
+            ]
+        },
+        options: {
+            
+            plugins: {
+                zoom: {
+                    pan: {
+                        enabled: true, // Mengaktifkan panning
+                        mode: 'x',   // Memungkinkan panning pada sumbu x dan y
+                        rangeMin: {
+                            // Menetapkan batas minimum panning pada sumbu x dan y
+                            x: null
+                        },
+                        rangeMax: {
+                            // Menetapkan batas maksimum panning pada sumbu x dan y
+                            x: null
+                        },
+                        speed: 20,    // Mengatur kecepatan panning
+                        threshold: 10 // Jarak minimal dalam piksel yang cursor harus bergerak sebelum panning dimulai
+                    },
+                    zoom: {
+                        wheel: {
+                            enabled: true
+                        },
+                        pinch: {
+                            enabled: true
+                        },
+                        mode: 'xy'
+                    }
+                }
+            },
+
+            interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: 'Date'
+                }
+              },
+              y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                  display: true,
+                  text: 'Price'
+                }
+              },
+              y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                  display: true,
+                  text: 'Sentimen'
+                },
+                beginAtZero: true,
+                min:-1,
+                max:1
+
+              }
+            }   
+        }
+    });
+};
+
+
+
+    </script>
+    <script src="./js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.5.1"></script>
+    <script src="./js/jquery-3.5.1.js"></script>
+    <script src="./js/jquery.dataTables.min.js"></script>
+    <script src="./js/dataTables.bootstrap5.min.js"></script>
+    <script src="./js/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.0.0/dist/chartjs-plugin-zoom.min.js"></script>
+
+
+  </body>
+</html>
